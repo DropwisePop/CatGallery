@@ -1,0 +1,19 @@
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:fitsSystemWindows="false"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <include
+        layout="@layout/mytoolbar"
+        android:id="@+id/mytoolbar"/>
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/thumb_recyclerview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/mytoolbar"/>
+
+</RelativeLayout>
+
