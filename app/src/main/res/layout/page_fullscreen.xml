@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.example.ben.catgallery.TouchImageView
+    <com.dropwisepop.catgallery.views.TouchImageView
         android:id="@+id/fullscreen_imageview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>

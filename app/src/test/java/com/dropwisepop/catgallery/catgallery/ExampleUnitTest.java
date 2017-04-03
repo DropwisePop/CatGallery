@@ -1,4 +1,4 @@
-package com.example.ben.catgallery;
+package com.dropwisepop.catgallery.catgallery;
 
 import org.junit.Test;
 

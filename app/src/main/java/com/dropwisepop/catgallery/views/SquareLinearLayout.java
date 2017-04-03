@@ -1,4 +1,4 @@
-package com.example.ben.catgallery;
+package com.dropwisepop.catgallery.views;
 
 import android.content.Context;
 import android.util.AttributeSet;

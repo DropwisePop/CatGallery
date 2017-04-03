@@ -1,10 +1,12 @@
-package com.example.ben.catgallery;
+package com.dropwisepop.catgallery.views;
 
 import android.content.Context;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.Toolbar;
 import android.util.AttributeSet;
 import android.util.Log;
+
+import com.dropwisepop.catgallery.util.Util;
 
 /**
  * An extended support mytoolbar. Primarily handles hiding and showing. TODO: Javadoc done?

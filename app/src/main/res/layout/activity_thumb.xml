@@ -9,7 +9,7 @@
         layout="@layout/mytoolbar"
         android:id="@+id/mytoolbar"/>
 
-    <android.support.v7.widget.RecyclerView
+    <com.dropwisepop.catgallery.dragselectrecyclerview.DragSelectRecyclerView
         android:id="@+id/thumb_recyclerview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="com.example.ben.catgallery">
+          package="com.dropwisepop.catgallery.catgallery">
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
 
@@ -12,14 +12,14 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <activity android:name="ThumbActivity">
+        <activity android:name="com.dropwisepop.catgallery.activities.ThumbActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <activity android:name="FullscreenActivity"/>
+        <activity android:name="com.dropwisepop.catgallery.activities.FullscreenActivity"/>
     </application>
 
 </manifest>
