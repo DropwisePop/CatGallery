@@ -11,6 +11,8 @@
 
     <com.dropwisepop.catgallery.dragselectrecyclerview.DragSelectRecyclerView
         android:id="@+id/thumb_recyclerview"
+        android:scrollbars="vertical"
+        android:fadeScrollbars="true"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_above="@id/mytoolbar"/>

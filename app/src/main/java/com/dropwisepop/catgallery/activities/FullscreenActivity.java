@@ -7,6 +7,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.content.Loader;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.Toolbar;
+import android.view.View;
 
 import com.dropwisepop.catgallery.adapters.FullscreenPagerAdapter;
 import com.dropwisepop.catgallery.catgallery.R;
@@ -16,7 +17,7 @@ import com.dropwisepop.catgallery.catgallery.R;
  */
 
 public class FullscreenActivity extends AbstractGalleryActivity
-    implements FullscreenPagerAdapter.PageClicked {
+        implements FullscreenPagerAdapter.PageClicked {
 
     //region Variables
     public static final String EXTRA_PAGER_POSITION = "com.dropwisepop.catgallery.EXTRA_ADAPTER_POSITION";
@@ -40,11 +41,11 @@ public class FullscreenActivity extends AbstractGalleryActivity
         setToolbarAsActionBar(toolbar, false);
 
         mViewPager = (ViewPager) findViewById(R.id.fullscreen_viewpager);
-        mFullscreenPagerAdapter = new FullscreenPagerAdapter(this);
+        mFullscreenPagerAdapter = new FullscreenPagerAdapter(this, mViewPager);
         mViewPager.setAdapter(mFullscreenPagerAdapter);
         mViewPager.addOnPageChangeListener(new PrivatePageChangeListener());
 
-        if (savedInstanceState == null){    //activity started for first time
+        if (savedInstanceState == null) {    //activity started for first time
             Intent callingIntent = getIntent();
             mStartPosition = callingIntent.getIntExtra(ThumbActivity.EXTRA_THUMB_POSITION, 0);
             mPreviousPosition = mStartPosition;
@@ -106,7 +107,6 @@ public class FullscreenActivity extends AbstractGalleryActivity
     private class PrivatePageChangeListener extends ViewPager.SimpleOnPageChangeListener {
         @Override
         public void onPageSelected(int position) {
-
             if (mPreviousPosition < position) {
                 sStep = 1;
             } else if (position < mPreviousPosition) {
@@ -116,7 +116,6 @@ public class FullscreenActivity extends AbstractGalleryActivity
         }
     }
     //endregion
-
 
     //region Helper Methods
     public void stepViewPager() {

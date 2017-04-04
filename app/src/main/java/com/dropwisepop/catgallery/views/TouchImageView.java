@@ -39,8 +39,6 @@ import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.OverScroller;
 import android.widget.Scroller;
 
-import com.dropwisepop.catgallery.util.Util;
-
 public class TouchImageView extends AppCompatImageView {
 
     private static final String DEBUG = "DEBUG";
@@ -69,7 +67,7 @@ public class TouchImageView extends AppCompatImageView {
     private static enum State { NONE, DRAG, ZOOM, FLING, ANIMATE_ZOOM };
     private State state;
 
-    private static boolean sImageScaledToSuperMin = false;
+    private static boolean sScaledToSuperMin = false;
 
     private float minScale;
     private float maxScale;
@@ -139,7 +137,7 @@ public class TouchImageView extends AppCompatImageView {
         setScaleType(ScaleType.MATRIX);
         setState(State.NONE);
         onDrawReady = false;
-        if (sImageScaledToSuperMin){
+        if (isScaledToSuperMin()){
             setZoom(superMinScale);
         }
         super.setOnTouchListener(new PrivateOnTouchListener());
@@ -751,14 +749,21 @@ public class TouchImageView extends AppCompatImageView {
         return true;
     }
 
+    /**
+     * @author dropwisepop
+     */
     public interface SwipeListener {
         public void onSwipeUp();
         public void onSwipeDown();
     }
 
+    /**
+     * @author dropwisepop
+     */
     public void setSwipeListener(SwipeListener swipeListener){
         mSwipeListener = swipeListener;
     }
+
 
     /**
      * Gesture Listener detects a single click or long click and passes that on
@@ -789,7 +794,7 @@ public class TouchImageView extends AppCompatImageView {
         @Override
         public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
             if (mSwipeListener != null) {
-                if (!isZoomed()) {
+                if (normalizedScale <= minScale) {
                     try {
                         float diffY = e2.getY() - e1.getY();
                         float diffX = e2.getX() - e1.getX();
@@ -798,12 +803,10 @@ public class TouchImageView extends AppCompatImageView {
                                 if (mSwipeListener != null) {
                                     mSwipeListener.onSwipeDown();
                                 }
-                                Log.d(Util.TAG, "onSwipeDown()!");
                             } else {
                                 if (mSwipeListener != null) {
                                     mSwipeListener.onSwipeUp();
                                 }
-                                Log.d(Util.TAG, "onSwipeUp()");
                             }
                         }
                     } catch (Exception exception) {
@@ -961,13 +964,27 @@ public class TouchImageView extends AppCompatImageView {
             if (normalizedScale > maxScale) {
                 targetZoom = maxScale;
                 animateToZoomBoundary = true;
-                sImageScaledToSuperMin = false;
+                sScaledToSuperMin = false;
+                if (mOnScaleListener != null){
+                    mOnScaleListener.onScaleToMinOrMax();
+                }
             } else if (normalizedScale > superMinScale && normalizedScale < minScale) {
                 targetZoom = minScale;
                 animateToZoomBoundary = true;
-                sImageScaledToSuperMin = false;
+                sScaledToSuperMin = false;
+                if (mOnScaleListener != null){
+                    mOnScaleListener.onScaleToMinOrMax();
+                }
             } else if (normalizedScale == superMinScale) {
-                sImageScaledToSuperMin = true;
+                sScaledToSuperMin = true;
+                if (mOnScaleListener != null){
+                    mOnScaleListener.onScaledToSuperMin();
+                }
+            } else {
+                sScaledToSuperMin = false;
+                if (mOnScaleListener != null){
+                    mOnScaleListener.onScaleToMinOrMax();
+                }
             }
 
             if (animateToZoomBoundary) {
@@ -977,9 +994,58 @@ public class TouchImageView extends AppCompatImageView {
         }
     }
 
+
+
+    //SOME OF MY FAVORITE THINGS...
+
+    private onScaleListener mOnScaleListener;
+
+    public void setOnScaleListener(onScaleListener onScaleListener) {
+        mOnScaleListener = onScaleListener;
+    }
+
+    public interface onScaleListener {
+        public void onScaledToSuperMin();
+        public void onScaleToMinOrMax();
+    }
+
+    public static boolean isScaledToSuperMin() {
+        return sScaledToSuperMin;
+    }
+
     public float getSuperMinScale() {
         return superMinScale;
     }
+
+    public float getMinScale() {
+        return minScale;
+    }
+
+    public void animateZoomToMinScale(){
+        float targetZoom = minScale;
+        DoubleTapZoom doubleTap = new DoubleTapZoom(targetZoom, viewWidth / 2, viewHeight / 2, true);
+        compatPostOnAnimation(doubleTap);
+        sScaledToSuperMin = false;
+        if (mOnScaleListener != null){
+            mOnScaleListener.onScaleToMinOrMax();
+        }
+    }
+
+    public void animateZoomToMaxScale(){
+        float targetZoom = maxScale;
+        DoubleTapZoom doubleTap = new DoubleTapZoom(targetZoom, viewWidth / 2, viewHeight / 2, true);
+        compatPostOnAnimation(doubleTap);
+        sScaledToSuperMin = false;
+        if (mOnScaleListener != null){
+            mOnScaleListener.onScaleToMinOrMax();
+        }
+    }
+
+
+
+
+
+
 
     private void scaleImage(double deltaScale, float focusX, float focusY, boolean stretchImageToSuper) {
 
@@ -1298,21 +1364,6 @@ public class TouchImageView extends AppCompatImageView {
                 return overScroller.getCurrY();
             }
         }
-    }
-
-    public void zoomToMinScale(){
-        float targetZoom = minScale;
-        DoubleTapZoom doubleTap = new DoubleTapZoom(targetZoom, viewWidth / 2, viewHeight / 2, true);
-        compatPostOnAnimation(doubleTap);
-        sImageScaledToSuperMin = false;
-    }
-
-    public void zoomToMaxScale(){
-        float targetZoom = maxScale;
-        DoubleTapZoom doubleTap = new DoubleTapZoom(targetZoom, viewWidth / 2, viewHeight / 2, true);
-        compatPostOnAnimation(doubleTap);
-        sImageScaledToSuperMin = false;
-
     }
 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN)

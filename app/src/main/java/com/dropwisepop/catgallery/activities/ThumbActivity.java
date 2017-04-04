@@ -65,6 +65,20 @@ public class ThumbActivity extends AbstractGalleryActivity
     //endregion
 
 
+    //region Menu
+    
+    //endregion
+
+
+    //region Loader Callbacks
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
+        super.onLoadFinished(loader, cursor);
+        mRecyclerView.getAdapter().notifyDataSetChanged();
+    }
+    //endregion
+
+
     //region Click Callbacks
     @Override
     public void onClick(int index) {
@@ -81,15 +95,6 @@ public class ThumbActivity extends AbstractGalleryActivity
         Log.d(Util.TAG, "onLongClick at " + index);
         mRecyclerView.setDragSelectActive(true, index);
         hideStatusBar();
-    }
-    //endregion
-
-
-    //region Loader Callbacks
-    @Override
-    public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
-        super.onLoadFinished(loader, cursor);
-        mRecyclerView.getAdapter().notifyDataSetChanged();
     }
     //endregion
 

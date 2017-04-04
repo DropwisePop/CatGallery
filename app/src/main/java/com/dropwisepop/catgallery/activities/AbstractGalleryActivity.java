@@ -51,11 +51,9 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         if (SCREEN_WIDTH == 0){
             SCREEN_WIDTH = getScreenWidth();
-            Log.d(Util.TAG, "SCREEN_WIDTH set to..." + SCREEN_WIDTH);
         }
         if (SCREEN_HEIGHT == 0){
             SCREEN_HEIGHT = getScreenHeight();
-            Log.d(Util.TAG, "SCREEN_HEIGHT set to..." + SCREEN_HEIGHT);
         }
     }
 

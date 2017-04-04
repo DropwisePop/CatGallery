@@ -3,6 +3,7 @@ package com.dropwisepop.catgallery.adapters;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.support.v4.view.PagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,12 +22,15 @@ import com.dropwisepop.catgallery.activities.FullscreenActivity;
 public class FullscreenPagerAdapter extends PagerAdapter {
 
     //region Member Variables
+    private static final String VIEW_TAG = "VIEW_TAG";
     private FullscreenActivity mFullscreenActivity;
+    private ViewPager mViewPager;
     //endregion
 
     //region Constructors
-    public FullscreenPagerAdapter(FullscreenActivity fullscreenActivity) {
+    public FullscreenPagerAdapter(FullscreenActivity fullscreenActivity, ViewPager viewPager) {
         mFullscreenActivity = fullscreenActivity;
+        mViewPager = viewPager;
     }
     //endregion
 
@@ -40,7 +44,7 @@ public class FullscreenPagerAdapter extends PagerAdapter {
     @Override
     public Object instantiateItem(ViewGroup container, final int position) {
         LayoutInflater inflater = LayoutInflater.from(mFullscreenActivity);
-        View view = inflater.inflate(R.layout.page_fullscreen, container, false);
+        final View view = inflater.inflate(R.layout.page_fullscreen, container, false);
 
         final TouchImageView imageView = (TouchImageView) view.findViewById(R.id.fullscreen_imageview);
 
@@ -64,14 +68,13 @@ public class FullscreenPagerAdapter extends PagerAdapter {
             @Override
             public boolean onLongClick(View v) {
                 if (imageView.isZoomed()){
-                    imageView.zoomToMinScale();
+                    imageView.animateZoomToMinScale();
                 } else {
-                    imageView.zoomToMaxScale();
+                    imageView.animateZoomToMaxScale();
                 }
                 return true;
             }
         });
-
         imageView.setSwipeListener(new TouchImageView.SwipeListener() {
             @Override
             public void onSwipeUp() {
@@ -84,6 +87,40 @@ public class FullscreenPagerAdapter extends PagerAdapter {
                 mFullscreenActivity.hideStatusBar();
             }
         });
+
+        imageView.setTag(VIEW_TAG + position);
+        imageView.setOnScaleListener(new TouchImageView.onScaleListener() {
+            @Override
+            public void onScaledToSuperMin() {
+                float superMinScale = imageView.getSuperMinScale();
+                TouchImageView nextImageView = (TouchImageView) mViewPager.findViewWithTag(VIEW_TAG + (position + 1));
+                TouchImageView prevImageView = (TouchImageView) mViewPager.findViewWithTag(VIEW_TAG + (position - 1));
+                if (nextImageView != null){
+                    nextImageView.setZoom(superMinScale);
+                }
+                if (prevImageView != null){
+                    prevImageView.setZoom(superMinScale);
+                }
+            }
+
+            @Override
+            public void onScaleToMinOrMax() {
+                float minScale = imageView.getMinScale();
+                TouchImageView nextImageView = (TouchImageView) mViewPager.findViewWithTag(VIEW_TAG + (position + 1));
+                TouchImageView prevImageView = (TouchImageView) mViewPager.findViewWithTag(VIEW_TAG + (position - 1));
+                if (nextImageView != null){
+                    nextImageView.setZoom(minScale);
+                }
+                if (prevImageView != null){
+                    prevImageView.setZoom(minScale);
+                }
+            }
+
+            //this is strictly to handle cases where the view is already instantiated;
+            //otherwise, zoom is adjusted when the image view is instantiated
+
+        });
+
 
         container.addView(view);
         return view;
