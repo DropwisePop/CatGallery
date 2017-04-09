@@ -21,35 +21,31 @@ import com.dropwisepop.catgallery.activities.FullscreenActivity;
 
 public class FullscreenPagerAdapter extends PagerAdapter {
 
-    //region Member Variables
-    private static final String VIEW_TAG = "VIEW_TAG";
+    //region Variables
+    public static final String VIEW_TAG = "VIEW_TAG";
+
     private FullscreenActivity mFullscreenActivity;
-    private ViewPager mViewPager;
+    private OnTouchListener mOnTouchListener;
     //endregion
+
 
     //region Constructors
-    public FullscreenPagerAdapter(FullscreenActivity fullscreenActivity, ViewPager viewPager) {
+    public FullscreenPagerAdapter(FullscreenActivity fullscreenActivity) {
         mFullscreenActivity = fullscreenActivity;
-        mViewPager = viewPager;
     }
     //endregion
 
-    //region Interfaces
-    public interface PageClicked {
-        public void pageClicked();
-    }
-    //endregion
 
     //region Overridden Methods
     @Override
-    public Object instantiateItem(ViewGroup container, final int position) {
+    public Object instantiateItem(ViewGroup container, final int index) {
         LayoutInflater inflater = LayoutInflater.from(mFullscreenActivity);
         final View view = inflater.inflate(R.layout.page_fullscreen, container, false);
 
         final TouchImageView imageView = (TouchImageView) view.findViewById(R.id.fullscreen_imageview);
 
         Glide.with(mFullscreenActivity)
-                .load(mFullscreenActivity.getUriFromMediaStore(position))
+                .load(mFullscreenActivity.getUriFromMediaStore(index))
                 .asBitmap()
                 .into(new SimpleTarget<Bitmap>() {
                     @Override
@@ -58,69 +54,48 @@ public class FullscreenPagerAdapter extends PagerAdapter {
                     }
                 });
 
-        imageView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mFullscreenActivity.pageClicked();
-            }
-        });
-        imageView.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                if (imageView.isZoomed()){
-                    imageView.animateZoomToMinScale();
-                } else {
-                    imageView.animateZoomToMaxScale();
+
+        imageView.setTag(VIEW_TAG + index);
+
+        //region OnTouchListener setup
+        if (mOnTouchListener != null) {
+            imageView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mOnTouchListener.onImagedClicked();
                 }
-                return true;
-            }
-        });
-        imageView.setSwipeListener(new TouchImageView.SwipeListener() {
-            @Override
-            public void onSwipeUp() {
-                mFullscreenActivity.showToolbar(100);
-            }
-
-            @Override
-            public void onSwipeDown() {
-                mFullscreenActivity.hideToolbar(100);
-                mFullscreenActivity.hideStatusBar();
-            }
-        });
-
-        imageView.setTag(VIEW_TAG + position);
-        imageView.setOnScaleListener(new TouchImageView.onScaleListener() {
-            @Override
-            public void onScaledToSuperMin() {
-                float superMinScale = imageView.getSuperMinScale();
-                TouchImageView nextImageView = (TouchImageView) mViewPager.findViewWithTag(VIEW_TAG + (position + 1));
-                TouchImageView prevImageView = (TouchImageView) mViewPager.findViewWithTag(VIEW_TAG + (position - 1));
-                if (nextImageView != null){
-                    nextImageView.setZoom(superMinScale);
+            });
+            imageView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    mOnTouchListener.onImageLongClicked(imageView);
+                    return true;
                 }
-                if (prevImageView != null){
-                    prevImageView.setZoom(superMinScale);
+            });
+            imageView.setSwipeListener(new TouchImageView.SwipeListener() {
+                @Override
+                public void onSwipeUp() {
+                    mOnTouchListener.onSwipeUp();
                 }
-            }
 
-            @Override
-            public void onScaleToMinOrMax() {
-                float minScale = imageView.getMinScale();
-                TouchImageView nextImageView = (TouchImageView) mViewPager.findViewWithTag(VIEW_TAG + (position + 1));
-                TouchImageView prevImageView = (TouchImageView) mViewPager.findViewWithTag(VIEW_TAG + (position - 1));
-                if (nextImageView != null){
-                    nextImageView.setZoom(minScale);
+                @Override
+                public void onSwipeDown() {
+                    mOnTouchListener.onSwipeDown();
                 }
-                if (prevImageView != null){
-                    prevImageView.setZoom(minScale);
+            });
+            imageView.setOnScaleListener(new TouchImageView.onScaleListener() {
+                @Override
+                public void onScaledToSuperMin() {
+                     mOnTouchListener.onScaledToSuperMin(imageView, index);
                 }
-            }
 
-            //this is strictly to handle cases where the view is already instantiated;
-            //otherwise, zoom is adjusted when the image view is instantiated
-
-        });
-
+                @Override
+                public void onScaleToMinOrMax() {
+                    mOnTouchListener.onScaledToMinOrMax(imageView, index);
+                }
+            });
+        }
+        //endregion
 
         container.addView(view);
         return view;
@@ -141,16 +116,23 @@ public class FullscreenPagerAdapter extends PagerAdapter {
     public void destroyItem(ViewGroup container, int position, Object object) {
         container.removeView((View) object);
     }
+    //endregion
 
-    /*
-    public boolean touchImageViewAtSuperMinScale() {
-        return (mTouchImageView.getCurrentZoom() == mTouchImageView.getSuperMinScale());
+
+    //region OnTouchListener and setter
+    public interface OnTouchListener {
+        void onImagedClicked();
+        void onImageLongClicked(TouchImageView touchImageView);
+        void onSwipeUp();
+        void onSwipeDown();
+        void onScaledToSuperMin(TouchImageView imageView, int index);
+        void onScaledToMinOrMax(TouchImageView imageView, int index);
     }
 
-    public void zoomTouchImageViewToSuperMinScale(){
-        mTouchImageView.setZoom(mTouchImageView.getSuperMinScale());
+    public void setOnTouchListener(OnTouchListener onTouchListener){
+        mOnTouchListener = onTouchListener;
     }
-    */
+    //endregion
 
-    //endregionk
+
 }

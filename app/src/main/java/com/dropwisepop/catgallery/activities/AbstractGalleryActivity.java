@@ -2,13 +2,11 @@ package com.dropwisepop.catgallery.activities;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
-import android.content.res.Configuration;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.CursorLoader;
@@ -16,11 +14,7 @@ import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
-import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.View;
-
-import com.dropwisepop.catgallery.util.Util;
 
 /**
  * This class is the foundation for activities that require media store access. It also allows
@@ -30,43 +24,25 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
         implements LoaderManager.LoaderCallbacks<Cursor> {
 
     //region Variables
-    private static final int MEDIASTORE_LOADER_ID =  0;
-    private static final int REQUEST_CODE_READ_EXTERNAL = 0;
-    private static int SCREEN_WIDTH;
-    private static int SCREEN_HEIGHT;
+    public enum SortOrder {ASCENDING, DESCENDING, RANDOM};
+    private static SortOrder sSortOrder = SortOrder.RANDOM;
 
-    private final DisplayMetrics mDisplayMetrics = new DisplayMetrics();
+    private static final int REQUEST_CODE_WRITE_EXTERNAL = 0;
+    private static final int MEDIASTORE_LOADER_ID = 0;
 
-    private Cursor mCursor;
+    private static Cursor sCursor;
+
     private Toolbar mToolbar;
-    private boolean mToolbarShown;
     //endregion
 
 
     //region Lifecycle
-
-
-    @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (SCREEN_WIDTH == 0){
-            SCREEN_WIDTH = getScreenWidth();
-        }
-        if (SCREEN_HEIGHT == 0){
-            SCREEN_HEIGHT = getScreenHeight();
-        }
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        hideStatusBar();
-    }
-
     @Override
     protected void onRestart() {
         super.onRestart();
-        restartLoader();
+        if (sSortOrder != SortOrder.RANDOM){
+            restartLoader();
+        }
     }
     //endregion
 
@@ -74,12 +50,12 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
     //region Permissions
     protected void checkReadExternalStoragePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) ==
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
                     PackageManager.PERMISSION_GRANTED) {
                 initializeLoader();
             } else {
-                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                        REQUEST_CODE_READ_EXTERNAL);
+                requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        REQUEST_CODE_WRITE_EXTERNAL);
             }
         } else {
             initializeLoader();
@@ -89,7 +65,7 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode) {
-            case REQUEST_CODE_READ_EXTERNAL:
+            case REQUEST_CODE_WRITE_EXTERNAL:
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     initializeLoader();
                 }
@@ -113,38 +89,59 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
         String selection = MediaStore.Files.FileColumns.MEDIA_TYPE + "="
                 + MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
 
+        String sortOrder = "ERROR? I HOPE!";
+        switch (sSortOrder){
+            case ASCENDING:
+                sortOrder = MediaStore.Files.FileColumns.DATE_ADDED + " ASC";
+                break;
+            case DESCENDING:
+                sortOrder = MediaStore.Files.FileColumns.DATE_ADDED + " DESC";
+                break;
+            case RANDOM:
+                sortOrder = "RANDOM()";
+                break;
+        }
+
         return new CursorLoader(
                 this,
                 MediaStore.Files.getContentUri("external"),
                 projection,
                 selection,
                 null,
-                MediaStore.Files.FileColumns.DATE_ADDED + " DESC"
+                sortOrder
         );
     }
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
-        mCursor = cursor;
+        sCursor = cursor;
     }
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
-        mCursor = null;
+        sCursor = null;
     }
     //endregion
 
 
-    //region Cursor Helper Methods
-    public Uri getUriFromMediaStore(int position){
-        int dataIndex = mCursor.getColumnIndex(MediaStore.Files.FileColumns.DATA);
-        mCursor.moveToPosition(position);
+    //region Cursor
+    public Uri getUriFromMediaStore(int position) {
+        int dataIndex = sCursor.getColumnIndex(MediaStore.Files.FileColumns.DATA);
+        sCursor.moveToPosition(position);
 
-        String dataString = mCursor.getString(dataIndex);
+        String dataString = sCursor.getString(dataIndex);
         return Uri.parse("file://" + dataString);
     }
 
-    public void initializeLoader(){
+    public Uri getUriFromMediaStoreNoFileSlashSlash(int position) {
+        int dataIndex = sCursor.getColumnIndex(MediaStore.Files.FileColumns.DATA);
+        sCursor.moveToPosition(position);
+
+        String dataString = sCursor.getString(dataIndex);
+        return Uri.parse(dataString);
+    }
+
+    public void initializeLoader() {
         getSupportLoaderManager().initLoader(MEDIASTORE_LOADER_ID, null, this);
     }
 
@@ -152,22 +149,38 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
         getSupportLoaderManager().restartLoader(MEDIASTORE_LOADER_ID, null, this);
     }
 
-    public Cursor getCursor(){
-        return mCursor;
+    public Cursor getCursor() {
+        return sCursor;
+    }
+
+    public int getCursorCount() {
+        return (sCursor == null ? 0 : sCursor.getCount());
+    }
+    //endregion
+
+
+    //region SortOrder Getters and Setters
+    public void setSortOrder(SortOrder sortOrder) {
+        sSortOrder = sortOrder;
+        restartLoader();
+    }
+
+    public static SortOrder getSortOrder() {
+        return sSortOrder;
     }
     //endregion
 
 
     //region Toolbar and Status Bar
-    public void setToolbarAsActionBar(Toolbar toolbar, boolean showToolbar){
+    public void setToolbarAsActionBar(Toolbar toolbar, boolean showToolbar) {
         mToolbar = toolbar;
         setSupportActionBar(mToolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
         setToolbarShown(showToolbar, 0);
     }
 
-    public void setToolbarShown(boolean showToolbar, int animationDuration){
-        if (showToolbar){
+    public void setToolbarShown(boolean showToolbar, int animationDuration) {
+        if (showToolbar) {
             showToolbar(animationDuration);
         } else {
             hideToolbar(animationDuration);
@@ -175,43 +188,27 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
     }
 
     public void showToolbar(int animationDuration) {
-        int orientation = getResources().getConfiguration().orientation;
-        if (orientation == Configuration.ORIENTATION_LANDSCAPE){
-            mToolbar.animate().translationY(0).setDuration(animationDuration);
-        } else {
-            mToolbar.animate().translationY(0).setDuration(animationDuration); //TODO: THIS bit right here is not working...toolbar does not appear
-        }
-        mToolbarShown = true;
+        mToolbar.animate().translationY(0).setDuration(animationDuration);
+        showStatusBar();
     }
 
     public void hideToolbar(int animationDuration) {
-        int orientation = getResources().getConfiguration().orientation;
-        if (orientation == Configuration.ORIENTATION_LANDSCAPE){
-            mToolbar.animate().translationY(SCREEN_WIDTH).setDuration(animationDuration);
-        } else {
-            mToolbar.animate().translationY(SCREEN_HEIGHT).setDuration(animationDuration);
-        }
-        mToolbarShown = false;
+        mToolbar.animate().translationY(-mToolbar.getHeight()).setDuration(animationDuration);
         hideStatusBar();
     }
 
-    public boolean isToolbarShown() {
-        return mToolbarShown;
+    public Toolbar getToolbar() {
+        return mToolbar;
     }
 
     public void hideStatusBar() {
         View decorView = getWindow().getDecorView();
-        decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+        decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);   // | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
     }
 
-    private int getScreenHeight(){
-        getWindowManager().getDefaultDisplay().getMetrics(mDisplayMetrics);
-        return mDisplayMetrics.heightPixels;
-    }
-
-    private int getScreenWidth(){
-        getWindowManager().getDefaultDisplay().getMetrics(mDisplayMetrics);
-        return mDisplayMetrics.widthPixels;
+    public void showStatusBar() {
+        View decorView = getWindow().getDecorView();
+        decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
     }
     //endregion
 
