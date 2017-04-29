@@ -86,7 +86,7 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
                 MediaStore.Files.FileColumns.DATA,
                 MediaStore.Files.FileColumns.MEDIA_TYPE
         };
-        String selection = MediaStore.Files.FileColumns.MEDIA_TYPE + "="
+        String selectionClause = MediaStore.Files.FileColumns.MEDIA_TYPE + "="
                 + MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
 
         String sortOrder = "ERROR? I HOPE!";
@@ -106,7 +106,7 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
                 this,
                 MediaStore.Files.getContentUri("external"),
                 projection,
-                selection,
+                selectionClause,
                 null,
                 sortOrder
         );

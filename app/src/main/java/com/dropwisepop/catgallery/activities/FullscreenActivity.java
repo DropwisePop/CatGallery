@@ -18,6 +18,7 @@ import com.dropwisepop.catgallery.views.TouchImageView;
  */
 
 public class FullscreenActivity extends AbstractGalleryActivity {
+
     //region Variables
     public static final String EXTRA_PAGER_POSITION = "com.dropwisepop.catgallery.EXTRA_ADAPTER_POSITION";
 
