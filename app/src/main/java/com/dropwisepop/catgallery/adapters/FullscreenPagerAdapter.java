@@ -44,7 +44,7 @@ public class FullscreenPagerAdapter extends PagerAdapter {
 
         final TouchImageView imageView = (TouchImageView) view.findViewById(R.id.fullscreen_imageview);
 
-        Glide.with(mFullscreenActivity)
+                Glide.with(mFullscreenActivity)
                 .load(mFullscreenActivity.getUriFromMediaStore(index))
                 .asBitmap()
                 .into(new SimpleTarget<Bitmap>() {
@@ -53,7 +53,6 @@ public class FullscreenPagerAdapter extends PagerAdapter {
                         imageView.setImageBitmap(resource);
                     }
                 });
-
 
         imageView.setTag(VIEW_TAG + index);
 
@@ -116,6 +115,12 @@ public class FullscreenPagerAdapter extends PagerAdapter {
     public void destroyItem(ViewGroup container, int position, Object object) {
         container.removeView((View) object);
     }
+
+    @Override
+    public int getItemPosition(Object object) {
+        return POSITION_NONE;
+    }
+
     //endregion
 
 

@@ -1,6 +1,10 @@
 package com.dropwisepop.catgallery.activities;
 
 import android.Manifest;
+import android.content.ContentResolver;
+import android.content.ContentUris;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
@@ -14,7 +18,14 @@ import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
+
+import com.dropwisepop.catgallery.util.Util;
+
+import java.io.File;
+
+import static com.dropwisepop.catgallery.activities.ThumbActivity.KEY_PREFERENCES_SORT_ORDER;
 
 /**
  * This class is the foundation for activities that require media store access. It also allows
@@ -24,8 +35,8 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
         implements LoaderManager.LoaderCallbacks<Cursor> {
 
     //region Variables
-    public enum SortOrder {ASCENDING, DESCENDING, RANDOM};
-    private static SortOrder sSortOrder = SortOrder.RANDOM;
+    public enum SortOrder { ASCENDING, DESCENDING, RANDOM;};
+    private static SortOrder sSortOrder;
 
     private static final int REQUEST_CODE_WRITE_EXTERNAL = 0;
     private static final int MEDIASTORE_LOADER_ID = 0;
@@ -89,7 +100,7 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
         String selectionClause = MediaStore.Files.FileColumns.MEDIA_TYPE + "="
                 + MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
 
-        String sortOrder = "ERROR? I HOPE!";
+        String sortOrder = "ERROR!";
         switch (sSortOrder){
             case ASCENDING:
                 sortOrder = MediaStore.Files.FileColumns.DATE_ADDED + " ASC";
@@ -119,7 +130,9 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
-        sCursor = null;
+        if (sCursor.getCount() == 0){   //no idea if this is valid, but it works for now 2017-02-05
+            sCursor = null;
+        }
     }
     //endregion
 
@@ -131,14 +144,6 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
 
         String dataString = sCursor.getString(dataIndex);
         return Uri.parse("file://" + dataString);
-    }
-
-    public Uri getUriFromMediaStoreNoFileSlashSlash(int position) {
-        int dataIndex = sCursor.getColumnIndex(MediaStore.Files.FileColumns.DATA);
-        sCursor.moveToPosition(position);
-
-        String dataString = sCursor.getString(dataIndex);
-        return Uri.parse(dataString);
     }
 
     public void initializeLoader() {
@@ -160,9 +165,17 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
 
 
     //region SortOrder Getters and Setters
-    public void setSortOrder(SortOrder sortOrder) {
+    public void setSortOrder(SortOrder sortOrder, boolean restartLoader) {
         sSortOrder = sortOrder;
-        restartLoader();
+
+        SharedPreferences preferences = getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putInt(KEY_PREFERENCES_SORT_ORDER, sortOrder.ordinal());
+        editor.apply();
+
+        if (restartLoader){
+            restartLoader();
+        }
     }
 
     public static SortOrder getSortOrder() {
@@ -203,13 +216,38 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
 
     public void hideStatusBar() {
         View decorView = getWindow().getDecorView();
-        decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);   // | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+        decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
     }
 
     public void showStatusBar() {
         View decorView = getWindow().getDecorView();
-        decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+        decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
     }
     //endregion
 
+
+    //region Other
+    public void deleteImageFromMediaStore(File file){
+        // Set up the projection (we only need the ID)
+        String[] projection = { MediaStore.Images.Media._ID };
+
+        // Match on the file path
+        String selection = MediaStore.Images.Media.DATA + " = ?";
+        String[] selectionArgs = new String[] { file.getAbsolutePath() };
+
+        // Query for the ID of the media matching the file path
+        Uri queryUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+        ContentResolver contentResolver = getContentResolver();
+        Cursor c = contentResolver.query(queryUri, projection, selection, selectionArgs, null);
+        if (c.moveToFirst()) {
+            // We found the ID. Deleting the item via the content provider will also remove the file
+            long id = c.getLong(c.getColumnIndexOrThrow(MediaStore.Images.Media._ID));
+            Uri deleteUri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
+            contentResolver.delete(deleteUri, null, null);
+        } else {
+            // File not found in media store DB
+        }
+        c.close();
+    }
+    //endregion
 }

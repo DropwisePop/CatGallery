@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:title="stack"
+        android:id="@+id/action_stack_mode"
+        app:showAsAction="ifRoom"
+    />
+    <item
+        android:title="background"
+        android:id="@+id/action_background"
+        app:showAsAction="never"
+    />
+    <item
+        android:title="toggle fit"
+        android:id="@+id/action_toggle_fit"
+        app:showAsAction="never"
+    />
+    <item
+        android:title="order"
+        android:id="@+id/action_order"
+        app:showAsAction="never"
+    >
+        <menu>
+            <item
+                android:title="ascending"
+                android:id="@+id/action_order_ascending"
+            />
+            <item
+                android:title="descending"
+                android:id="@+id/action_order_descending"
+            />
+            <item
+                android:title="random"
+                android:id="@+id/action_order_random"
+            />
+        </menu>
+    </item>
+
+</menu>

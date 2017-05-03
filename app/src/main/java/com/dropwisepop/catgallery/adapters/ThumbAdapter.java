@@ -1,6 +1,7 @@
 package com.dropwisepop.catgallery.adapters;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.support.v7.widget.RecyclerView;
@@ -15,6 +16,8 @@ import com.dropwisepop.catgallery.activities.ThumbActivity;
 import com.dropwisepop.catgallery.catgallery.R;
 import com.dropwisepop.catgallery.dragselectrecyclerview.DragSelectRecyclerViewAdapter;
 
+import static com.dropwisepop.catgallery.activities.ThumbActivity.KEY_PREFERENCES_SORT_ORDER;
+
 /**
  * Created by dropwisepop on 4/2/2017.
  */
@@ -23,8 +26,10 @@ public class ThumbAdapter extends DragSelectRecyclerViewAdapter<ThumbAdapter.Thu
 
 
     //region Variables
-    public enum FitMode {CENTER_CROP, FIT};
-    private static FitMode sFitMode = FitMode.CENTER_CROP;
+    private static final String KEY_PREFERENCES_FIT_MODE = "com.dropwisepop.catgallery.KEY_PREFERENCES_FIT_MODE";
+
+    private enum FitMode {CENTER_CROP, FIT};
+    private static FitMode sFitMode;
 
     private ThumbActivity mThumbActivity;   //TODO: make this a generic context
     private OnTouchListener mOnTouchListener;
@@ -52,6 +57,10 @@ public class ThumbAdapter extends DragSelectRecyclerViewAdapter<ThumbAdapter.Thu
 
         ImageView imageView = holder.getImageView();
 
+        SharedPreferences preferences = mThumbActivity.getPreferences(Context.MODE_PRIVATE);
+        int fitMode = preferences.getInt(KEY_PREFERENCES_FIT_MODE, 0);
+        sFitMode = FitMode.values()[fitMode];
+
         float scaleFactorForMargins = 1;
         if (sFitMode == FitMode.CENTER_CROP){
             Glide.with(mThumbActivity)
@@ -65,7 +74,7 @@ public class ThumbAdapter extends DragSelectRecyclerViewAdapter<ThumbAdapter.Thu
                     .load(mThumbActivity.getUriFromMediaStore(position))
                     .fitCenter()
                     .into(imageView);
-            scaleFactorForMargins = 0.90f;
+            scaleFactorForMargins = 0.95f;
         }
 
         if (isIndexSelected(position)) {
@@ -84,6 +93,7 @@ public class ThumbAdapter extends DragSelectRecyclerViewAdapter<ThumbAdapter.Thu
         Cursor cursor = mThumbActivity.getCursor();
         return (cursor == null ? 0 : cursor.getCount());
     }
+
 
     //endregion
 
@@ -107,6 +117,12 @@ public class ThumbAdapter extends DragSelectRecyclerViewAdapter<ThumbAdapter.Thu
         } else {
             sFitMode = FitMode.CENTER_CROP;
         }
+
+        SharedPreferences preferences =  mThumbActivity.getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putInt(KEY_PREFERENCES_FIT_MODE, sFitMode.ordinal());
+        editor.commit();
+
         notifyDataSetChanged();
     }
     //endregion

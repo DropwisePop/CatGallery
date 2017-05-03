@@ -6,16 +6,24 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.content.Loader;
 import android.support.v4.view.ViewPager;
+import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.Toolbar;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
+import android.view.animation.DecelerateInterpolator;
+import android.widget.TextView;
 
 import com.dropwisepop.catgallery.adapters.FullscreenPagerAdapter;
 import com.dropwisepop.catgallery.catgallery.R;
 import com.dropwisepop.catgallery.views.TouchImageView;
 
-/**
- * Created by dropwisepop on 3/18/2017.
- */
+import java.io.File;
 
 public class FullscreenActivity extends AbstractGalleryActivity {
 
@@ -50,8 +58,11 @@ public class FullscreenActivity extends AbstractGalleryActivity {
             @Override
             public void onImagedClicked() {
                 int nextItem = mViewPager.getCurrentItem() + sStep;
-                if (nextItem < 0 || nextItem > mFullscreenPagerAdapter.getCount()){
-                    //TODO: end of list animation
+                if (nextItem < 0 || nextItem > mFullscreenPagerAdapter.getCount() -1){
+                    TouchImageView imageView = (TouchImageView) mViewPager.
+                            findViewWithTag(FullscreenPagerAdapter.VIEW_TAG + (mViewPager.getCurrentItem()));
+                    imageView.setAlpha(0.50f);
+                    imageView.animate().alpha(1).setDuration(250).setInterpolator(new DecelerateInterpolator());
                 } else {
                     mViewPager.setCurrentItem(nextItem, false);
                 }
@@ -109,7 +120,6 @@ public class FullscreenActivity extends AbstractGalleryActivity {
             }
         });
 
-
         mViewPager.setAdapter(mFullscreenPagerAdapter);
         mViewPager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener(){
                 @Override
@@ -128,7 +138,6 @@ public class FullscreenActivity extends AbstractGalleryActivity {
             mStartPosition = callingIntent.getIntExtra(ThumbActivity.EXTRA_THUMB_POSITION, 0);
             mPreviousPosition = mStartPosition;
             mViewPager.setCurrentItem(mStartPosition, false);
-
         } else {
             mStartPosition = savedInstanceState.getInt(EXTRA_PAGER_POSITION, 0);
             mPreviousPosition = mStartPosition;
@@ -152,7 +161,49 @@ public class FullscreenActivity extends AbstractGalleryActivity {
         super.onDestroy();
         sDestroyed = true;
     }
+    //endregion
 
+
+    //region Menu
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.fullscreen, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch(item.getItemId()){
+            case (R.id.action_fullscreen_delete):
+                PopupMenu confirmDelete = new PopupMenu(this, findViewById(R.id.action_fullscreen_delete));
+                confirmDelete.getMenuInflater().inflate(R.menu.popup_confirm_delete, confirmDelete.getMenu());
+                confirmDelete.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem item) {
+                        File fileToDelete = new File(getUriFromMediaStore(mViewPager.getCurrentItem()).getPath());
+                            if (fileToDelete.exists()){
+                                int nextItem = mViewPager.getCurrentItem() + sStep;
+                                if (getCursorCount() == 1) {
+                                    finish();
+                                } else if (nextItem < 0) {
+                                    nextItem = 1;
+                                } else if (nextItem > getCursorCount()){
+                                    nextItem = mViewPager.getCurrentItem() - 1;
+                                }
+                                mViewPager.setCurrentItem(nextItem, false);
+
+                                deleteImageFromMediaStore(fileToDelete);
+                                restartLoader();
+                            }
+                        return true;
+                    }
+                });
+                confirmDelete.show();
+                break;
+        }
+        return true;
+    }
     //endregion
 
 
@@ -165,12 +216,6 @@ public class FullscreenActivity extends AbstractGalleryActivity {
             mViewPager.setCurrentItem(mStartPosition, false);
             sDestroyed = false;
         }
-    }
-
-    @Override
-    public void onLoaderReset(Loader<Cursor> loader) {
-        super.onLoaderReset(loader);
-        this.finish();
     }
     //endregion
 
