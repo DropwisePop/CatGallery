@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v4.content.Loader;
@@ -24,6 +25,7 @@ import com.dropwisepop.catgallery.catgallery.R;
 import com.dropwisepop.catgallery.dragselectrecyclerview.DragSelectRecyclerView;
 
 import java.io.File;
+import java.util.ArrayList;
 
 /**
  * ThumbActivity is the main screen of TheCatGallery.
@@ -181,6 +183,18 @@ public class ThumbActivity extends AbstractGalleryActivity {
                 break;
             case R.id.action_order_random:
                 setSortOrder(SortOrder.RANDOM, true);
+                break;
+            case R.id.action_share:
+                ArrayList<Uri> imageUris = new ArrayList<Uri>();
+                for (int i = 0; i < mThumbAdapter.getSelectedCount(); i++){
+                    imageUris.add(getUriFromMediaStore(mThumbAdapter.getSelectedIndices()[i]));
+                }
+                Intent shareIntent = new Intent();
+                shareIntent.setAction(Intent.ACTION_SEND_MULTIPLE);
+                shareIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, imageUris);
+                shareIntent.setType("image/*");
+                startActivity(Intent.createChooser(shareIntent, "Share images to.."));
+                mThumbAdapter.clearSelected();  //TODO: this clears right away; shouldn't
                 break;
             case R.id.action_delete:
                 PopupMenu confirmDelete = new PopupMenu(this, findViewById(R.id.action_delete));

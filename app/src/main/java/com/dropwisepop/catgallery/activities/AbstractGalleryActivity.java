@@ -97,6 +97,7 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
                 MediaStore.Files.FileColumns.DATA,
                 MediaStore.Files.FileColumns.MEDIA_TYPE
         };
+
         String selectionClause = MediaStore.Files.FileColumns.MEDIA_TYPE + "="
                 + MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
 
