@@ -19,6 +19,7 @@ import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
+import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
@@ -31,13 +32,17 @@ import android.os.Parcelable;
 import android.support.v7.widget.AppCompatImageView;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.Display;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.OverScroller;
 import android.widget.Scroller;
+
+import com.dropwisepop.catgallery.util.Util;
 
 public class TouchImageView extends AppCompatImageView {
 
@@ -797,8 +802,17 @@ public class TouchImageView extends AppCompatImageView {
                 if (normalizedScale <= minScale) {
                     try {
                         float diffY = e2.getY() - e1.getY();
-                        float diffX = e2.getX() - e1.getX();
-                        if (Math.abs(diffY) > SWIPE_DISTANCE_THRESHOLD && Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD) {
+
+                        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+                        Display display = wm.getDefaultDisplay();
+                        Point size = new Point();
+                        display.getSize(size);
+                        int height = size.y;
+                        int hotspotRange = size.y / 3;
+
+                        if (Math.abs(diffY) > SWIPE_DISTANCE_THRESHOLD
+                                && Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD
+                                && e1.getY() < hotspotRange) {
                             if (diffY > 0) {
                                 if (mSwipeListener != null) {
                                     mSwipeListener.onSwipeDown();

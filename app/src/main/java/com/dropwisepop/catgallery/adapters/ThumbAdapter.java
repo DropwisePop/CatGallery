@@ -2,7 +2,6 @@ package com.dropwisepop.catgallery.adapters;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.database.Cursor;
 import android.graphics.Color;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -11,16 +10,9 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
-import com.dropwisepop.catgallery.activities.AbstractGalleryActivity;
 import com.dropwisepop.catgallery.activities.ThumbActivity;
 import com.dropwisepop.catgallery.catgallery.R;
 import com.dropwisepop.catgallery.dragselectrecyclerview.DragSelectRecyclerViewAdapter;
-
-import static com.dropwisepop.catgallery.activities.ThumbActivity.KEY_PREFERENCES_SORT_ORDER;
-
-/**
- * Created by dropwisepop on 4/2/2017.
- */
 
 public class ThumbAdapter extends DragSelectRecyclerViewAdapter<ThumbAdapter.ThumbViewHolder> {
 
@@ -31,8 +23,7 @@ public class ThumbAdapter extends DragSelectRecyclerViewAdapter<ThumbAdapter.Thu
     private enum FitMode {CENTER_CROP, FIT};
     private static FitMode sFitMode;
 
-    private ThumbActivity mThumbActivity;   //TODO: make this a generic context
-    private OnTouchListener mOnTouchListener;
+    private ThumbActivity mThumbActivity;
     //endregion
 
 
@@ -43,7 +34,7 @@ public class ThumbAdapter extends DragSelectRecyclerViewAdapter<ThumbAdapter.Thu
     //endregion
 
 
-    //region Overridden Methods
+    //region Required Methods
     @Override
     public ThumbViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
@@ -55,62 +46,54 @@ public class ThumbAdapter extends DragSelectRecyclerViewAdapter<ThumbAdapter.Thu
     public void onBindViewHolder(ThumbViewHolder holder, int position) {
         super.onBindViewHolder(holder, position); // this line is important!
 
-        ImageView imageView = holder.getImageView();
+        final ImageView imageView = holder.getImageView();
 
         SharedPreferences preferences = mThumbActivity.getPreferences(Context.MODE_PRIVATE);
         int fitMode = preferences.getInt(KEY_PREFERENCES_FIT_MODE, 0);
         sFitMode = FitMode.values()[fitMode];
 
-        float scaleFactorForMargins = 1;
         if (sFitMode == FitMode.CENTER_CROP){
             Glide.with(mThumbActivity)
-                    .load(mThumbActivity.getUriFromMediaStore(position))
+                    .load(mThumbActivity.getUriWithFilePrefixFromDataList(position))
                     .centerCrop()
                     .into(imageView);
             imageView.setScaleX(1);
             imageView.setScaleY(1);
+
+            int pad = valueInDP(2);
+            imageView.setPadding(pad, pad, pad, pad);
+            imageView.setBackgroundColor(Color.TRANSPARENT);
         } else {
             Glide.with(mThumbActivity)
-                    .load(mThumbActivity.getUriFromMediaStore(position))
+                    .load(mThumbActivity.getUriWithFilePrefixFromDataList(position))
                     .fitCenter()
                     .into(imageView);
-            scaleFactorForMargins = 0.95f;
+
+            int pad = valueInDP(5);
+            imageView.setPadding(pad, pad, pad, pad);
+            imageView.setBackgroundColor(Color.BLACK);
         }
 
         if (isIndexSelected(position)) {
             imageView.setColorFilter(Color.argb(200, 0, 0, 0));
-            imageView.setScaleX(0.90f * scaleFactorForMargins);
-            imageView.setScaleY(0.90f * scaleFactorForMargins);
+            imageView.setScaleX(0.90f);
+            imageView.setScaleY(0.90f);
         } else {
             imageView.clearColorFilter();
-            imageView.setScaleX(1 * scaleFactorForMargins);
-            imageView.setScaleY(1 * scaleFactorForMargins);
+            imageView.setScaleX(1);
+            imageView.setScaleY(1);
+
         }
     }
 
     @Override
     public int getItemCount() {
-        Cursor cursor = mThumbActivity.getCursor();
-        return (cursor == null ? 0 : cursor.getCount());
-    }
-
-
-    //endregion
-
-
-    //region OnTouchListener and setter
-    public interface OnTouchListener {
-        void onThumbClicked(int index);
-        void onThumbLongClicked(int index);
-    }
-
-    public void setOnTouchListener(OnTouchListener onTouchListener){
-        mOnTouchListener = onTouchListener;
+        return mThumbActivity.getDataList().size();
     }
     //endregion
 
 
-    //region Misc Methods
+    //region toggleFitMode()
     public void toggleFitMode() {
         if (sFitMode == FitMode.CENTER_CROP){
             sFitMode = FitMode.FIT;
@@ -121,7 +104,7 @@ public class ThumbAdapter extends DragSelectRecyclerViewAdapter<ThumbAdapter.Thu
         SharedPreferences preferences =  mThumbActivity.getPreferences(Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
         editor.putInt(KEY_PREFERENCES_FIT_MODE, sFitMode.ordinal());
-        editor.commit();
+        editor.apply();
 
         notifyDataSetChanged();
     }
@@ -137,24 +120,19 @@ public class ThumbAdapter extends DragSelectRecyclerViewAdapter<ThumbAdapter.Thu
             super(v);
             mImageView = (ImageView) v.findViewById(R.id.thumb_imageview);
 
-            //region OnTouchListener setup
-            if (mOnTouchListener != null){
-                mImageView.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        mOnTouchListener.onThumbClicked(getAdapterPosition());
-                    }
-                });
-                mImageView.setOnLongClickListener(new View.OnLongClickListener() {
-                    @Override
-                    public boolean onLongClick(View v) {
-                        mOnTouchListener.onThumbLongClicked(getAdapterPosition());
-                        return true;
-                    }
-                });
-            }
-            //endregion
-
+            mImageView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mThumbActivity.onThumbClicked(getAdapterPosition());
+                }
+            });
+            mImageView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    mThumbActivity.onThumbLongClicked(getAdapterPosition());
+                    return true;
+                }
+            });
         }
 
         ImageView getImageView() {
@@ -164,6 +142,14 @@ public class ThumbAdapter extends DragSelectRecyclerViewAdapter<ThumbAdapter.Thu
     }
     //endregion
 
+
+    //region Other
+    private int valueInDP(int val){
+        final float scale = mThumbActivity.getResources().getDisplayMetrics().density;
+        return (int) (val * scale + 0.5f);
+    }
+
+    //endregion
 
 }
 

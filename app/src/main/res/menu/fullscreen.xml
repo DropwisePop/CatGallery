@@ -3,9 +3,37 @@
       xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:title="share"
+        android:id="@+id/action_fullscreen_share"
+        app:showAsAction="ifRoom"
+    />
+
+    <item
         android:title="delete"
         android:id="@+id/action_fullscreen_delete"
         app:showAsAction="always"
     />
 
+    <item
+        android:title="ground..."
+        android:id="@+id/action_background"
+        app:showAsAction="never">
+        <menu>
+
+            <item
+                android:title="white"
+                android:id="@+id/action_background_white"
+                android:icon="@drawable/action_background_white"/>
+            <item
+                android:title="grey"
+                android:id="@+id/action_background_grey"
+                android:icon="@drawable/action_background_grey"/>
+            <item
+                android:title="black"
+                android:id="@+id/action_background_black"
+                android:icon="@drawable/action_background_black"/>
+
+        </menu>
+
+    </item>
 </menu>

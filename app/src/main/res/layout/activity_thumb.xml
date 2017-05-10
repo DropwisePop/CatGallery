@@ -1,35 +1,20 @@
 <RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:fitsSystemWindows="true"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <android.support.v7.widget.Toolbar
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        android:id="@+id/mytoolbar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:popupTheme="@style/Theme.AppCompat.Light.DarkActionBar"
-        android:background="@color/colorMidGrey">
-
-            <TextView
-                android:id="@+id/mytoolbar_selection_count"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="blah"
-                android:layout_gravity="start"/>
-
-    </android.support.v7.widget.Toolbar>
+    <include
+        android:id="@+id/toolbar_region"
+        layout="@layout/toolbar_region"/>
 
     <com.dropwisepop.catgallery.dragselectrecyclerview.DragSelectRecyclerView
         android:id="@+id/thumb_recyclerview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:scrollbars="vertical"
         android:fadeScrollbars="true"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@id/mytoolbar"/>
-
+        android:layout_below="@id/toolbar_region"/>
 
 
 </RelativeLayout>

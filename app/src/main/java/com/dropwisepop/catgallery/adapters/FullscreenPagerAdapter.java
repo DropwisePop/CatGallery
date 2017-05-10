@@ -1,9 +1,7 @@
 package com.dropwisepop.catgallery.adapters;
 
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.support.v4.view.PagerAdapter;
-import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,9 +9,9 @@ import android.view.ViewGroup;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
+import com.dropwisepop.catgallery.activities.FullscreenActivity;
 import com.dropwisepop.catgallery.views.TouchImageView;
 import com.dropwisepop.catgallery.catgallery.R;
-import com.dropwisepop.catgallery.activities.FullscreenActivity;
 
 /**
  * Created by dropwisepop on 3/18/2017.
@@ -45,7 +43,7 @@ public class FullscreenPagerAdapter extends PagerAdapter {
         final TouchImageView imageView = (TouchImageView) view.findViewById(R.id.fullscreen_imageview);
 
                 Glide.with(mFullscreenActivity)
-                .load(mFullscreenActivity.getUriFromMediaStore(index))
+                .load(mFullscreenActivity.getUriWithFilePrefixFromDataList(index))
                 .asBitmap()
                 .into(new SimpleTarget<Bitmap>() {
                     @Override
@@ -102,8 +100,7 @@ public class FullscreenPagerAdapter extends PagerAdapter {
 
     @Override
     public int getCount() {
-        Cursor cursor = mFullscreenActivity.getCursor();
-        return ((cursor == null) ? 0 : cursor.getCount());
+        return mFullscreenActivity.getDataList().size();
     }
 
     @Override

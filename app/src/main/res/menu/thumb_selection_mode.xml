@@ -6,8 +6,6 @@
         android:title="share"
         android:id="@+id/action_share"
         app:showAsAction="ifRoom"
-        android:actionProviderClass=
-            "android.widget.ShareActionProvider"
     />
 
     <item

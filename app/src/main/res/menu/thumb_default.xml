@@ -3,39 +3,55 @@
       xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:title="stack"
-        android:id="@+id/action_stack_mode"
-        app:showAsAction="ifRoom"
-    />
-    <item
-        android:title="background"
-        android:id="@+id/action_background"
-        app:showAsAction="never"
-    />
-    <item
         android:title="toggle fit"
         android:id="@+id/action_toggle_fit"
         app:showAsAction="never"
     />
+
     <item
-        android:title="order"
-        android:id="@+id/action_order"
-        app:showAsAction="never"
-    >
+        android:title="ground..."
+        android:id="@+id/action_background"
+        app:showAsAction="never">
         <menu>
+
             <item
-                android:title="ascending"
-                android:id="@+id/action_order_ascending"
-            />
+                android:title="white"
+                android:id="@+id/action_background_white"
+                android:icon="@drawable/action_background_white"/>
             <item
-                android:title="descending"
-                android:id="@+id/action_order_descending"
-            />
+                android:title="grey"
+                android:id="@+id/action_background_grey"
+                android:icon="@drawable/action_background_grey"/>
             <item
-                android:title="random"
-                android:id="@+id/action_order_random"
-            />
+                android:title="black"
+                android:id="@+id/action_background_black"
+                android:icon="@drawable/action_background_black"/>
+
         </menu>
+
+    </item>
+
+    <item
+        android:title="order..."
+        android:id="@+id/action_order"
+        app:showAsAction="never">
+        <menu>
+
+            <item
+                android:title="oldest first"
+                android:id="@+id/action_order_ascending"
+                android:icon="@drawable/action_background_black"/>
+            <item
+                android:title="newest first"
+                android:id="@+id/action_order_descending"
+                android:icon="@drawable/action_background_black"/>
+            <item
+                android:title="shuffled"
+                android:id="@+id/action_order_shuffled"
+                android:icon="@drawable/action_background_black"/>
+
+        </menu>
+
     </item>
 
 </menu>

@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.dropwisepop.catgallery.views.SquareLinearLayout
+<com.dropwisepop.catgallery.views.SquareFrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:layout_margin="1dp">
+    android:layout_margin="2dp"
+    android:orientation="vertical">
 
     <ImageView
         android:id="@+id/thumb_imageview"
+        android:elevation="3dp"
+        android:outlineProvider="paddedBounds"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        />
+        android:layout_height="match_parent"/>
 
-</com.dropwisepop.catgallery.views.SquareLinearLayout>
+</com.dropwisepop.catgallery.views.SquareFrameLayout>
