@@ -3,37 +3,62 @@
       xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:title="share"
         android:id="@+id/action_fullscreen_share"
-        app:showAsAction="ifRoom"
-    />
+        android:title="share"
+        app:showAsAction="ifRoom"/>
 
     <item
-        android:title="delete"
         android:id="@+id/action_fullscreen_delete"
-        app:showAsAction="always"
-    />
+        android:title="delete"
+        app:showAsAction="ifRoom"/>
 
     <item
-        android:title="ground..."
+        android:id="@+id/action_fullscreen_info"
+        android:title="information"
+        app:showAsAction="never"/>
+
+    <item
         android:id="@+id/action_background"
+        android:title="ground..."
         app:showAsAction="never">
         <menu>
 
             <item
-                android:title="white"
                 android:id="@+id/action_background_white"
-                android:icon="@drawable/action_background_white"/>
+                android:icon="@drawable/action_ground_white"
+                android:title="white"/>
             <item
-                android:title="grey"
                 android:id="@+id/action_background_grey"
-                android:icon="@drawable/action_background_grey"/>
+                android:icon="@drawable/action_ground_grey"
+                android:title="grey"/>
             <item
-                android:title="black"
                 android:id="@+id/action_background_black"
-                android:icon="@drawable/action_background_black"/>
-
+                android:icon="@drawable/action_ground_black"
+                android:title="black"/>
         </menu>
-
     </item>
+
+    <item
+        android:id="@+id/action_rotate"
+        android:title="rotate"
+        app:showAsAction="never">
+        <menu>
+            <item
+                android:id="@+id/action_rotate_negative_90"
+                android:title="-90"/>
+            <item
+                android:id="@+id/action_rotate_90"
+                android:title="90"/>
+            <item
+                android:id="@+id/action_order_180"
+                android:title="180"/>
+        </menu>
+    </item>
+
+    <item
+        android:id="@+id/action_fullscreen_edit"
+        android:title="edit..."
+        app:showAsAction="never"/>
+
+
 </menu>

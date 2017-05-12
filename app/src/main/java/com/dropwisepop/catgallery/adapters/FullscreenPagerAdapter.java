@@ -38,14 +38,14 @@ public class FullscreenPagerAdapter extends PagerAdapter {
     @Override
     public Object instantiateItem(ViewGroup container, final int index) {
         LayoutInflater inflater = LayoutInflater.from(mFullscreenActivity);
-        final View view = inflater.inflate(R.layout.page_fullscreen, container, false);
+        final View view = inflater.inflate(R.layout.viewpager_page, container, false);
 
-        final TouchImageView imageView = (TouchImageView) view.findViewById(R.id.fullscreen_imageview);
+        final TouchImageView imageView = (TouchImageView) view.findViewById(R.id.viewpager_imageview);
 
                 Glide.with(mFullscreenActivity)
-                .load(mFullscreenActivity.getUriWithFilePrefixFromDataList(index))
-                .asBitmap()
-                .into(new SimpleTarget<Bitmap>() {
+                        .load(mFullscreenActivity.getUriWithFilePrefixFromDataList(index))
+                        .asBitmap()
+                        .into(new SimpleTarget<Bitmap>() {
                     @Override
                     public void onResourceReady(Bitmap resource, GlideAnimation<? super Bitmap> glideAnimation) {
                         imageView.setImageBitmap(resource);

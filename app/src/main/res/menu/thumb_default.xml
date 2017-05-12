@@ -3,55 +3,49 @@
       xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:title="toggle fit"
         android:id="@+id/action_toggle_fit"
+        android:title="toggle fit"
         app:showAsAction="never"
     />
 
     <item
-        android:title="ground..."
         android:id="@+id/action_background"
+        android:title="ground..."
         app:showAsAction="never">
         <menu>
 
             <item
-                android:title="white"
                 android:id="@+id/action_background_white"
-                android:icon="@drawable/action_background_white"/>
+                android:icon="@drawable/action_ground_white"
+                android:title="white"/>
             <item
-                android:title="grey"
                 android:id="@+id/action_background_grey"
-                android:icon="@drawable/action_background_grey"/>
+                android:icon="@drawable/action_ground_grey"
+                android:title="grey"/>
             <item
-                android:title="black"
                 android:id="@+id/action_background_black"
-                android:icon="@drawable/action_background_black"/>
+                android:icon="@drawable/action_ground_black"
+                android:title="black"/>
 
         </menu>
-
     </item>
 
     <item
-        android:title="order..."
         android:id="@+id/action_order"
+        android:title="order..."
         app:showAsAction="never">
         <menu>
 
             <item
-                android:title="oldest first"
                 android:id="@+id/action_order_ascending"
-                android:icon="@drawable/action_background_black"/>
+                android:title="oldest first"/>
             <item
-                android:title="newest first"
                 android:id="@+id/action_order_descending"
-                android:icon="@drawable/action_background_black"/>
+                android:title="newest first"/>
             <item
-                android:title="shuffled"
                 android:id="@+id/action_order_shuffled"
-                android:icon="@drawable/action_background_black"/>
-
+                android:title="shuffled"/>
         </menu>
-
     </item>
 
 </menu>

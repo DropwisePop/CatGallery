@@ -1,6 +1,5 @@
 package com.dropwisepop.catgallery.activities;
 
-import android.Manifest;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
@@ -14,6 +13,10 @@ import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
+
+import com.dropwisepop.catgallery.util.Util;
+
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -27,14 +30,13 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
     implements LoaderManager.LoaderCallbacks<Cursor>{
 
     //region Variables
-    static final String KEY_SORT_ORDER = "com.dropwisepop.catgallery.KEY_SORT_ORDER";
-    static final String KEY_PREFERENCES_SORT_ORDER = "com.dropwisepop.catgallery.KEY_PREFERENCES_SORT_ORDER";
+    private static final String KEY_SORT_ORDER = "KEY_SORT_ORDER";
     private static final int MEDIASTORE_LOADER_ID = 0;
 
-    enum SortOrder { ASCENDING, DESCENDING, SHUFFLED;};
-    private SortOrder sSortOrder;
-
     private static ArrayList<String> sDataList = new ArrayList<>();
+
+    enum SortOrder { ASCENDING, DESCENDING, SHUFFLED;};
+    private static SortOrder sSortOrder;
     //endregion
 
 
@@ -43,11 +45,9 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        if (savedInstanceState == null){
+        if (sSortOrder == null){
             SharedPreferences preferences = getPreferences(Context.MODE_PRIVATE);
-            sSortOrder = SortOrder.values()[preferences.getInt(KEY_PREFERENCES_SORT_ORDER, 0)];
-        } else {
-            sSortOrder = SortOrder.values()[savedInstanceState.getInt(KEY_SORT_ORDER, 0)];
+            sSortOrder = SortOrder.values()[preferences.getInt(KEY_SORT_ORDER, 0)];
         }
     }
 
@@ -66,22 +66,17 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
 
 
     //region Loader
-    public void initializeLoader() {
+    protected void initializeLoader() {
         getSupportLoaderManager().initLoader(MEDIASTORE_LOADER_ID, null, this);
     }
 
-    public void restartLoader() {
+    protected void restartLoader() {
         getSupportLoaderManager().restartLoader(MEDIASTORE_LOADER_ID, null, this);
     }
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        String[] projection = {
-                MediaStore.Files.FileColumns._ID,
-                MediaStore.Files.FileColumns.DATE_ADDED,
-                MediaStore.Files.FileColumns.DATA,
-                MediaStore.Files.FileColumns.MEDIA_TYPE,
-        };
+        String[] projection = { MediaStore.Files.FileColumns.DATA };
 
         String selectionClause = MediaStore.Files.FileColumns.MEDIA_TYPE + "="
                 + MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
@@ -112,27 +107,23 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
+        int dataIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA);
+
         if (sSortOrder != SortOrder.SHUFFLED){
             sDataList.clear();
             while (cursor.moveToNext()){
-                int dataIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA);
-                sDataList.add(cursor.getString(dataIndex));
-            }
+                sDataList.add(cursor.getString(dataIndex)); }
         } else {
             if (getDataList().isEmpty()){   //if empty, populate then shuffle
                 while (cursor.moveToNext()){
-                    int dataIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA);
-                    sDataList.add(cursor.getString(dataIndex));
-                }
+                    sDataList.add(cursor.getString(dataIndex)); }
                 Collections.shuffle(sDataList);
             } else {                        //else, add new data, remove old data
                 ArrayList<String> updatedDataList = new ArrayList<String>();
                 while (cursor.moveToNext()){
-                    int dataIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA);
                     String dataString = cursor.getString(dataIndex);
                     updatedDataList.add(dataString);
                 }
-
                 for (String dataString: updatedDataList) {  //add new data
                     if (!sDataList.contains(dataString)) { sDataList.add(dataString); }
                 }
@@ -150,7 +141,6 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
     public void onLoaderReset(Loader<Cursor> loader) {
         //empty
     }
-
     //endregion
 
 
@@ -168,59 +158,34 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
         String[] projection = { MediaStore.Images.Media._ID };
         String selection = MediaStore.Images.Media.DATA + " = ?";
         String[] selectionArgs = new String[] { dataStringToDelete };
-
         Uri queryUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
         ContentResolver contentResolver = getContentResolver();
         Cursor cursor = contentResolver.query(queryUri, projection, selection, selectionArgs, null);
 
         if (cursor.moveToFirst()) {
             long id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID));
-            Uri uriToDelete = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
+            Uri uriToDelete = ContentUris
+                    .withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
             contentResolver.delete(uriToDelete, null, null);
-
             getDataList().remove(dataStringToDelete);
         }
+
         cursor.close();
-    }
-
-    public void deleteImages(ArrayList<String> dataStringsToDelete){
-        for (String dataString : dataStringsToDelete){
-            String[] projection = { MediaStore.Images.Media._ID };
-            String selection = MediaStore.Images.Media.DATA + " = ?";
-            String[] selectionArgs = new String[] { dataString };
-
-            Uri queryUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
-            ContentResolver contentResolver = getContentResolver();
-            Cursor cursor = contentResolver.query(queryUri, projection, selection, selectionArgs, null);
-
-            if (cursor.moveToFirst()) {
-                long id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID));
-                Uri uriToDelete = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id);
-                contentResolver.delete(uriToDelete, null, null);
-
-                getDataList().remove(dataString);
-            }
-            cursor.close();
-        }
     }
     //endregion
 
 
     //region SortOrder Getters and Setters
-    public void setSortOrder(SortOrder sortOrder) { //TODO: move to ImageData
+    public void setSortOrder(SortOrder sortOrder) {
         sSortOrder = sortOrder;
 
         SharedPreferences preferences = getPreferences(Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
-        editor.putInt(KEY_PREFERENCES_SORT_ORDER, sortOrder.ordinal());
+        editor.putInt(KEY_SORT_ORDER, sortOrder.ordinal());
         editor.apply();
 
         restartLoader();
         invalidateOptionsMenu();
-    }
-
-    public void shuffleDataList(){
-        Collections.shuffle(sDataList);
     }
 
     public SortOrder getSortOrder() {
@@ -228,11 +193,4 @@ public abstract class AbstractGalleryActivity extends AppCompatActivity
     }
     //endregion
 
-
-    //region Other
-    int map(int x, int in_min, int in_max, int out_min, int out_max)
-    {
-        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-    }
-    //endregion
 }

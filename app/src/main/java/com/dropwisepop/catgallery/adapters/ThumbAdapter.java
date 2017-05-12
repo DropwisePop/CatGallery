@@ -18,10 +18,10 @@ public class ThumbAdapter extends DragSelectRecyclerViewAdapter<ThumbAdapter.Thu
 
 
     //region Variables
-    private static final String KEY_PREFERENCES_FIT_MODE = "com.dropwisepop.catgallery.KEY_PREFERENCES_FIT_MODE";
+    private static final String KEY_FIT_MODE = "KEY_FIT_MODE";
 
     private enum FitMode {CENTER_CROP, FIT};
-    private static FitMode sFitMode;
+    private FitMode mFitMode;
 
     private ThumbActivity mThumbActivity;
     //endregion
@@ -30,6 +30,10 @@ public class ThumbAdapter extends DragSelectRecyclerViewAdapter<ThumbAdapter.Thu
     //region Constructor
     public ThumbAdapter(ThumbActivity thumbActivity) {
         mThumbActivity = thumbActivity;
+
+        SharedPreferences preferences = mThumbActivity.getPreferences(Context.MODE_PRIVATE);
+        int fitMode = preferences.getInt(KEY_FIT_MODE, 0);
+        mFitMode = FitMode.values()[fitMode];
     }
     //endregion
 
@@ -38,7 +42,7 @@ public class ThumbAdapter extends DragSelectRecyclerViewAdapter<ThumbAdapter.Thu
     @Override
     public ThumbViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.thumbnail_thumb, parent, false);
+                .inflate(R.layout.recyclerview_thumbnail, parent, false);
         return new ThumbViewHolder(view);
     }
 
@@ -48,11 +52,7 @@ public class ThumbAdapter extends DragSelectRecyclerViewAdapter<ThumbAdapter.Thu
 
         final ImageView imageView = holder.getImageView();
 
-        SharedPreferences preferences = mThumbActivity.getPreferences(Context.MODE_PRIVATE);
-        int fitMode = preferences.getInt(KEY_PREFERENCES_FIT_MODE, 0);
-        sFitMode = FitMode.values()[fitMode];
-
-        if (sFitMode == FitMode.CENTER_CROP){
+        if (mFitMode == FitMode.CENTER_CROP){
             Glide.with(mThumbActivity)
                     .load(mThumbActivity.getUriWithFilePrefixFromDataList(position))
                     .centerCrop()
@@ -75,14 +75,14 @@ public class ThumbAdapter extends DragSelectRecyclerViewAdapter<ThumbAdapter.Thu
         }
 
         if (isIndexSelected(position)) {
-            imageView.setColorFilter(Color.argb(200, 0, 0, 0));
+            imageView.setColorFilter(Color.argb(150, 0, 0, 0));
             imageView.setScaleX(0.90f);
             imageView.setScaleY(0.90f);
+
         } else {
             imageView.clearColorFilter();
             imageView.setScaleX(1);
             imageView.setScaleY(1);
-
         }
     }
 
@@ -95,19 +95,24 @@ public class ThumbAdapter extends DragSelectRecyclerViewAdapter<ThumbAdapter.Thu
 
     //region toggleFitMode()
     public void toggleFitMode() {
-        if (sFitMode == FitMode.CENTER_CROP){
-            sFitMode = FitMode.FIT;
+        if (mFitMode == FitMode.CENTER_CROP){
+            mFitMode = FitMode.FIT;
         } else {
-            sFitMode = FitMode.CENTER_CROP;
+            mFitMode = FitMode.CENTER_CROP;
         }
 
         SharedPreferences preferences =  mThumbActivity.getPreferences(Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
-        editor.putInt(KEY_PREFERENCES_FIT_MODE, sFitMode.ordinal());
+        editor.putInt(KEY_FIT_MODE, mFitMode.ordinal());
         editor.apply();
 
         notifyDataSetChanged();
     }
+
+    public void setFitMode(FitMode fitMode) {
+        mFitMode = fitMode;
+    }
+
     //endregion
 
 
@@ -118,7 +123,8 @@ public class ThumbAdapter extends DragSelectRecyclerViewAdapter<ThumbAdapter.Thu
 
         ThumbViewHolder(View v) {
             super(v);
-            mImageView = (ImageView) v.findViewById(R.id.thumb_imageview);
+
+            mImageView = (ImageView) v.findViewById(R.id.recyclerview_imageview);
 
             mImageView.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -138,12 +144,11 @@ public class ThumbAdapter extends DragSelectRecyclerViewAdapter<ThumbAdapter.Thu
         ImageView getImageView() {
             return mImageView;
         }
-
     }
     //endregion
 
 
-    //region Other
+    //region Helper Methods
     private int valueInDP(int val){
         final float scale = mThumbActivity.getResources().getDisplayMetrics().density;
         return (int) (val * scale + 0.5f);

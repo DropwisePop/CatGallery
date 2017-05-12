@@ -3,47 +3,40 @@
       xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:title="share"
         android:id="@+id/action_share"
-        app:showAsAction="ifRoom"
-    />
+        android:title="share"
+        app:showAsAction="ifRoom"/>
 
     <item
-        android:title="delete"
         android:id="@+id/action_delete"
-        app:showAsAction="ifRoom"
-    />
+        android:title="delete"
+        app:showAsAction="ifRoom"/>
 
     <item
-        android:title="deselect all"
         android:id="@+id/action_deselect_all"
-        app:showAsAction="never"
-    />
+        android:title="deselect all"
+        app:showAsAction="never"/>
 
     <item
-        android:title="select all"
         android:id="@+id/action_select_all"
-        app:showAsAction="never"
-    />
+        android:title="select all"
+        app:showAsAction="never"/>
 
     <item
-        android:title="rotate"
         android:id="@+id/action_rotate"
-        app:showAsAction="never"
-    >
+        android:title="rotate"
+        app:showAsAction="never">
         <menu>
             <item
-                android:title="-90"
                 android:id="@+id/action_rotate_negative_90"
-            />
+                android:title="-90"/>
             <item
-                android:title="90"
                 android:id="@+id/action_rotate_90"
-            />
+                android:title="90"/>
             <item
-                android:title="180"
                 android:id="@+id/action_order_180"
-            />
+                android:title="180"/>
         </menu>
     </item>
+
 </menu>

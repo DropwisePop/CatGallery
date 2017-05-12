@@ -2,8 +2,7 @@
 <RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:fitsSystemWindows="false">
+    android:layout_height="match_parent">
 
     <android.support.v4.view.ViewPager
         android:id="@+id/fullscreen_viewpager"
@@ -17,7 +16,7 @@
         android:background="@drawable/toolbar_extension"/>
 
     <include
-        layout="@layout/toolbar_region"
-        android:id="@+id/toolbar_region"/>
+        android:id="@+id/toolbar_region"
+        layout="@layout/toolbar_region"/>
 
 </RelativeLayout>

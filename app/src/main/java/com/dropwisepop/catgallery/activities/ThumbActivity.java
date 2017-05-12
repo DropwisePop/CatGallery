@@ -2,6 +2,7 @@ package com.dropwisepop.catgallery.activities;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -9,9 +10,9 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.Loader;
@@ -19,19 +20,22 @@ import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.Toolbar;
 import android.util.DisplayMetrics;
-import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.dropwisepop.catgallery.dragselectrecyclerview.DragSelectRecyclerViewAdapter;
 import com.dropwisepop.catgallery.adapters.ThumbAdapter;
 import com.dropwisepop.catgallery.catgallery.R;
 import com.dropwisepop.catgallery.dragselectrecyclerview.DragSelectRecyclerView;
-import com.dropwisepop.catgallery.util.Util;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import static com.dropwisepop.catgallery.activities.FullscreenActivity.EXTRA_PAGER_POSITION_RESULT;
 
@@ -42,9 +46,8 @@ import static com.dropwisepop.catgallery.activities.FullscreenActivity.EXTRA_PAG
 public class ThumbActivity extends AbstractGalleryActivity {
 
     //region Variables
-    private static final String KEY_PREFERENCES_THUMB_BASE_COLOR = "com.dropwisepop.catgallery.KEY_PREFERENCES_THUMB_BASE_COLOR";
-    private static final String KEY_GRID_LAYOUT_MANAGER_SAVED_STATE = "com.dropwisepop.catgallery.KEY_GRID_LAYOUT_MANAGER_SAVED_STATE";
-    private static final String KEY_THUMB_BASE_COLOR = "com.dropwisepop.catgallery.KEY_THUMB_BASE_COLOR";
+    private static final String KEY_GRID_LAYOUT_MANAGER_SAVED_STATE = "KEY_GRID_LAYOUT_MANAGER_SAVED_STATE";
+    private static final String KEY_THUMB_BASE_COLOR = "KEY_THUMB_BASE_COLOR";
 
     static final String EXTRA_THUMB_POSITION = "com.dropwisepop.catgallery.EXTRA_THUMB_POSITION";
 
@@ -57,13 +60,10 @@ public class ThumbActivity extends AbstractGalleryActivity {
     private DragSelectRecyclerView mRecyclerView;
     private GridLayoutManager mGridLayoutManager;
     private ThumbAdapter mThumbAdapter;
-    private TextView mCountTextView;
+    private TextView mSelectionCountTextView;
 
     private int mBaseColor;
-
     private int mCurrentDataListSize;
-
-    private Parcelable mGridLayoutManagerSavedState;    //TODO: what does this do?
     //endregion
 
 
@@ -82,10 +82,11 @@ public class ThumbActivity extends AbstractGalleryActivity {
         mThumbAdapter.setSelectionListener(new DragSelectRecyclerViewAdapter.SelectionListener() {
             @Override
             public void onDragSelectionChanged(int count) {
-                mCountTextView.setText(mThumbAdapter.getSelectedCount() + "/" + mThumbAdapter.getItemCount());
+                mSelectionCountTextView.setText(mThumbAdapter.getSelectedCount() +
+                        "/" + mThumbAdapter.getItemCount());
+
                 //the menu must be reset in the following scenarios...
-                if (count == 0 || count == 1
-                        || count == 5 || count == 6
+                if (count == 0 || count == 1 || count == 5 || count == 6
                         || count == mThumbAdapter.getItemCount()
                         || count == mThumbAdapter.getItemCount() - 1){
                     invalidateOptionsMenu();
@@ -95,13 +96,11 @@ public class ThumbActivity extends AbstractGalleryActivity {
         mGridLayoutManager = new GridLayoutManager(this, getGoodSpanCount());
         mRecyclerView.setLayoutManager(mGridLayoutManager);
 
-        mCountTextView = (TextView) findViewById(R.id.main_toolbar_text);
-
-        mCurrentDataListSize = 0;
+        mSelectionCountTextView = (TextView) findViewById(R.id.main_toolbar_textview);
 
         if (savedInstanceState == null){
             SharedPreferences preferences = getPreferences(Context.MODE_PRIVATE);
-            int baseColor = preferences.getInt(KEY_PREFERENCES_THUMB_BASE_COLOR, -1);
+            int baseColor = preferences.getInt(KEY_THUMB_BASE_COLOR, -1);
 
             if (baseColor == -1){   //first time starting application
                 setBaseColor(Color.WHITE);
@@ -113,7 +112,6 @@ public class ThumbActivity extends AbstractGalleryActivity {
         } else {
             mThumbAdapter.restoreInstanceState(savedInstanceState);
             setBaseColor(savedInstanceState.getInt(KEY_THUMB_BASE_COLOR));
-            mGridLayoutManagerSavedState = savedInstanceState.getParcelable(KEY_GRID_LAYOUT_MANAGER_SAVED_STATE);
         }
     }
 
@@ -126,17 +124,19 @@ public class ThumbActivity extends AbstractGalleryActivity {
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
+    protected void onStop() {
+        super.onStop();
         mCurrentDataListSize = getDataList().size();
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        invalidateOptionsMenu();
+    public void onBackPressed() {
+        if (mThumbAdapter.getSelectedCount() > 0){
+            mThumbAdapter.clearSelected();
+        } else {
+            super.onBackPressed();
+        }
     }
-
     //endregion
 
 
@@ -175,22 +175,38 @@ public class ThumbActivity extends AbstractGalleryActivity {
     public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
         super.onLoadFinished(loader, cursor);
 
-
         int prevDataListSize = mCurrentDataListSize;
         mCurrentDataListSize = getDataList().size();
-
         if (mCurrentDataListSize != prevDataListSize){
             mThumbAdapter.clearSelected();
         }
 
-        mThumbAdapter.notifyDataSetChanged();
+        int difference = mCurrentDataListSize - prevDataListSize;
+        if (difference >=5 && prevDataListSize!= 0 && getSortOrder() == SortOrder.SHUFFLED){
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
-        /*  TODO: find out what this does!
-        if (mGridLayoutManagerSavedState != null) {
-            mGridLayoutManager.onRestoreInstanceState(mGridLayoutManagerSavedState);
-            mGridLayoutManagerSavedState = null;
+            LayoutInflater inflater = getLayoutInflater();
+            final View dialogView = inflater.inflate(R.layout.dialog_reshuffle, null);
+            builder.setView(dialogView);
+            final TextView reshuffleText = (TextView) dialogView.findViewById(R.id.reshuffle_text);
+            reshuffleText.setText(difference + " images have been added. Reshuffle?");
+            final AlertDialog shuffleDialog = builder.create();
+
+            final Button reshuffleButton = (Button) dialogView.findViewById(R.id.dialog_reshuffle_button);
+            reshuffleButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Collections.shuffle(getDataList());
+                    mThumbAdapter.notifyDataSetChanged();
+                    shuffleDialog.dismiss();
+                }
+            });
+
+            shuffleDialog.show();
         }
-        */
+
+        mThumbAdapter.notifyDataSetChanged();
+        invalidateOptionsMenu();
     }
     //endregion
 
@@ -201,24 +217,20 @@ public class ThumbActivity extends AbstractGalleryActivity {
         MenuInflater inflater = getMenuInflater();
         if(mThumbAdapter == null || mThumbAdapter.getSelectedCount() == 0) {
             inflater.inflate(R.menu.thumb_default, menu);
-            mCountTextView.setText(mThumbAdapter.getItemCount() + " IMAGES");
-
+            mSelectionCountTextView.setText(mThumbAdapter.getItemCount() + " IMAGES");
             switch (getSortOrder()){
                 case ASCENDING:
-                    //TODO: instead, set icon
-                    //menu.findItem(R.id.action_order_ascending).setTitle("ascending <-");
+                    menu.findItem(R.id.action_order_ascending).setIcon(R.drawable.ic_play_arrow);
                     break;
                 case DESCENDING:
-                    //menu.findItem(R.id.action_order_descending).setTitle("descending <-");
+                    menu.findItem(R.id.action_order_descending).setIcon(R.drawable.ic_play_arrow);
                     break;
                 case SHUFFLED:
-                    //menu.findItem(R.id.action_order_shuffled).setTitle("shuffled <-");
+                    menu.findItem(R.id.action_order_shuffled).setIcon(R.drawable.ic_play_arrow);
                     break;
             }
-
         } else {
             inflater.inflate(R.menu.thumb_selection_mode,  menu);
-
             if (mThumbAdapter.getSelectedCount() > 5){
                 menu.findItem(R.id.action_share).setEnabled(false);
             }
@@ -226,7 +238,6 @@ public class ThumbActivity extends AbstractGalleryActivity {
                 menu.findItem(R.id.action_select_all).setEnabled(false);
             }
         }
-
         return true;
     }
 
@@ -245,7 +256,7 @@ public class ThumbActivity extends AbstractGalleryActivity {
                 break;
             case R.id.action_order_shuffled:
                 setSortOrder(SortOrder.SHUFFLED);
-                shuffleDataList();
+                Collections.shuffle(getDataList());
                 break;
             case R.id.action_background_white:
                 setBaseColor(Color.WHITE);
@@ -257,7 +268,7 @@ public class ThumbActivity extends AbstractGalleryActivity {
                 setBaseColor(Color.BLACK);
                 break;
             case R.id.action_share:
-                ArrayList<Uri> imageUris = new ArrayList<Uri>();
+                ArrayList<Uri> imageUris = new ArrayList<>();
                 for (int i = 0; i < mThumbAdapter.getSelectedCount(); i++){
                     imageUris.add(getUriWithFilePrefixFromDataList(mThumbAdapter.getSelectedIndices()[i]));
                 }
@@ -265,23 +276,65 @@ public class ThumbActivity extends AbstractGalleryActivity {
                 shareIntent.setAction(Intent.ACTION_SEND_MULTIPLE);
                 shareIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, imageUris);
                 shareIntent.setType("image/*");
-                startActivityForResult(Intent.createChooser(shareIntent, "share..."),REQUEST_CODE_SHARE_INTENT);
+                startActivityForResult(Intent.createChooser(shareIntent, "share..."),
+                        REQUEST_CODE_SHARE_INTENT);
                 break;
             case R.id.action_delete:
                 PopupMenu confirmDelete = new PopupMenu(this, findViewById(R.id.action_delete));
-                confirmDelete.getMenuInflater().inflate(R.menu.popup_confirm_delete, confirmDelete.getMenu());
+                confirmDelete.getMenuInflater()
+                        .inflate(R.menu.popup_confirm_delete, confirmDelete.getMenu());
                 confirmDelete.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                     @Override
                     public boolean onMenuItemClick(MenuItem item) {
                         Integer[] selectedIndices = mThumbAdapter.getSelectedIndices();
-                        ArrayList<String> dataStringsToDelete = new ArrayList<String>();
+                        final ArrayList<String> dataStringsToDelete = new ArrayList<String>();
                         for (int i = 0; i < selectedIndices.length; i++){
                             String dataString = getDataList().get(selectedIndices[i]);
                             dataStringsToDelete.add(dataString);
                         }
-                        deleteImages(dataStringsToDelete);
-                        mThumbAdapter.notifyDataSetChanged();
-                        mThumbAdapter.clearSelected();
+
+                        AlertDialog.Builder builder = new AlertDialog.Builder(ThumbActivity.this);
+                        LayoutInflater inflater = getLayoutInflater();
+                        final View dialogView = inflater.inflate(R.layout.dialog_deletion_in_progress, null);
+                        builder.setView(dialogView);
+                        builder.setCancelable(false);
+
+                        final ProgressBar progressBar = (ProgressBar) dialogView.findViewById(R.id.deletion_progress_bar);
+                        progressBar.setMax(dataStringsToDelete.size());
+                        final TextView percentageTextView = (TextView) dialogView.findViewById(R.id.deletion_percentage_text);
+                        percentageTextView.setText(0 + "%");
+                        final TextView countTextView = (TextView) dialogView.findViewById(R.id.deletion_count_text);
+                        countTextView.setText("0/" + dataStringsToDelete.size());
+
+                        final AlertDialog dialog = builder.create();
+                        dialog.show();
+
+                        new AsyncTask<Void, Integer, Void>(){
+                            @Override
+                            protected Void doInBackground(Void... params) {
+                                for(int i = 0; i < dataStringsToDelete.size(); i++){
+                                    deleteImage(dataStringsToDelete.get(i));
+                                    publishProgress(i);
+                                }
+                                return null;
+                            }
+
+                            @Override
+                            protected void onProgressUpdate(Integer... values) {
+                                progressBar.setProgress(values[0]);
+                                float percentage = (values[0] * 100.0f) /dataStringsToDelete.size();
+                                percentageTextView.setText((int) Math.floor(percentage) + "%");
+                                countTextView.setText(values[0] + "/" + dataStringsToDelete.size());
+                            }
+
+                            @Override
+                            protected void onPostExecute(Void aVoid) {
+                                dialog.dismiss();
+                                mThumbAdapter.notifyDataSetChanged();
+                                mThumbAdapter.clearSelected();
+                            }
+                        }.execute();
+
                         return true;
                     }
                 });
@@ -298,7 +351,7 @@ public class ThumbActivity extends AbstractGalleryActivity {
     //endregion
 
 
-    //region ImageView Touch
+    //region Thumb Touch Events
     public void onThumbClicked(int index) {
         if(mThumbAdapter.getSelectedCount() == 0){
             startFullscreenActivity(index);
@@ -343,22 +396,13 @@ public class ThumbActivity extends AbstractGalleryActivity {
 
         SharedPreferences preferences = getPreferences(Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
-        editor.putInt(KEY_PREFERENCES_THUMB_BASE_COLOR, mBaseColor);
+        editor.putInt(KEY_THUMB_BASE_COLOR, mBaseColor);
         editor.apply();
     }
     //endregion
 
 
-    //region Other
-    @Override
-    public void onBackPressed() {
-        if (mThumbAdapter.getSelectedCount() > 0){
-            mThumbAdapter.clearSelected();
-        } else {
-            super.onBackPressed();
-        }
-    }
-
+    //region Helper Methods
     private int getGoodSpanCount() {
         DisplayMetrics metrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(metrics);
