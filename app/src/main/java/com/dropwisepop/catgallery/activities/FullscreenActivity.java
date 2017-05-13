@@ -2,13 +2,20 @@ package com.dropwisepop.catgallery.activities;
 
 import android.app.AlertDialog;
 import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Matrix;
+import android.graphics.Point;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
 import android.support.v4.content.Loader;
@@ -30,8 +37,13 @@ import com.dropwisepop.catgallery.catgallery.R;
 import com.dropwisepop.catgallery.util.Util;
 import com.dropwisepop.catgallery.views.TouchImageView;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import static com.dropwisepop.catgallery.adapters.FullscreenPagerAdapter.VIEW_TAG;
 
 public class FullscreenActivity extends AbstractGalleryActivity {
 
@@ -80,7 +92,7 @@ public class FullscreenActivity extends AbstractGalleryActivity {
                 int nextItem = mViewPager.getCurrentItem() + mStep;
                 if (nextItem < 0 || nextItem > mFullscreenPagerAdapter.getCount() -1){
                     TouchImageView imageView = (TouchImageView) mViewPager.
-                            findViewWithTag(FullscreenPagerAdapter.VIEW_TAG + (mViewPager.getCurrentItem()));
+                            findViewWithTag(VIEW_TAG + (mViewPager.getCurrentItem()));
                     imageView.setAlpha(0.50f);
                     imageView.animate().alpha(1).setDuration(250).setInterpolator(new DecelerateInterpolator());
                 } else {
@@ -111,9 +123,9 @@ public class FullscreenActivity extends AbstractGalleryActivity {
             public void onScaledToSuperMin(TouchImageView touchImageView, int index) {
                 float superMinScale = touchImageView.getSuperMinScale();
                 TouchImageView nextImageView = (TouchImageView) mViewPager.
-                        findViewWithTag(FullscreenPagerAdapter.VIEW_TAG + (index + 1));
+                        findViewWithTag(VIEW_TAG + (index + 1));
                 TouchImageView prevImageView = (TouchImageView) mViewPager.
-                        findViewWithTag(FullscreenPagerAdapter.VIEW_TAG + (index - 1));
+                        findViewWithTag(VIEW_TAG + (index - 1));
 
                 if (nextImageView != null){
                     nextImageView.setZoom(superMinScale);
@@ -127,9 +139,9 @@ public class FullscreenActivity extends AbstractGalleryActivity {
             public void onScaledToMinOrMax(TouchImageView imageView, int index) {
                 float minScale = imageView.getMinScale();
                 TouchImageView nextImageView = (TouchImageView) mViewPager.
-                        findViewWithTag(FullscreenPagerAdapter.VIEW_TAG  + (index + 1));
+                        findViewWithTag(VIEW_TAG  + (index + 1));
                 TouchImageView prevImageView = (TouchImageView) mViewPager.
-                        findViewWithTag(FullscreenPagerAdapter.VIEW_TAG  + (index - 1));
+                        findViewWithTag(VIEW_TAG  + (index - 1));
 
                 if (nextImageView != null){
                     nextImageView.setZoom(minScale);
@@ -149,7 +161,6 @@ public class FullscreenActivity extends AbstractGalleryActivity {
                     } else {
                         mStep = -1;
                     }
-                    Log.d(Util.TAG, "onPageChangeListener mStep..." + mStep);
                     mCurrentPosition = newPosition;
                     mLastDataString = getDataList().get(mCurrentPosition);
                     mCountTextView.setText(newPosition +  1 + "/"
@@ -169,6 +180,8 @@ public class FullscreenActivity extends AbstractGalleryActivity {
 
             SharedPreferences preferences = getPreferences(Context.MODE_PRIVATE);
             setBaseColor(preferences.getInt(KEY_FULLSCREEN_BASE_COLOR, Color.WHITE));
+
+            mStep = 1;
         } else {
             setBaseColor(savedInstanceState.getInt(KEY_FULLSCREEN_BASE_COLOR));
             mStep = savedInstanceState.getInt(KEY_STEP, 1);
@@ -201,7 +214,6 @@ public class FullscreenActivity extends AbstractGalleryActivity {
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
         super.onLoadFinished(loader, cursor);
-        Log.d(Util.TAG, "onLoadFinished()");
 
         mFullscreenPagerAdapter.notifyDataSetChanged();
 
@@ -289,7 +301,7 @@ public class FullscreenActivity extends AbstractGalleryActivity {
                     }
                 });
 
-                String dataString = getDataList().get(mViewPager.getCurrentItem());
+                final String dataString = getDataList().get(mViewPager.getCurrentItem());
                 String[] projection = {
                         MediaStore.Images.Media._ID,
                         MediaStore.Images.Media.WIDTH,
@@ -329,6 +341,144 @@ public class FullscreenActivity extends AbstractGalleryActivity {
             case R.id.action_background_black:
                 setBaseColor(Color.BLACK);
                 break;
+
+            case R.id.action_rotate_negative_90:
+                //TODO
+                break;
+            case R.id.action_rotate_90:
+                //TODO
+                //TO TRY NEXT: writing orientation via exif interface
+
+
+
+                final TouchImageView imageView = (TouchImageView) mViewPager.findViewWithTag(VIEW_TAG +
+                        mViewPager.getCurrentItem());
+                final String imageString = getDataList().get(mViewPager.getCurrentItem());
+
+                new AsyncTask<Void, Void, Point>(){
+                    @Override
+                    protected Point doInBackground(Void... params) {
+                        String[] projection = {
+                                MediaStore.Images.Media.WIDTH,
+                                MediaStore.Images.Media.HEIGHT};
+                        String selection = MediaStore.Images.Media.DATA + " = ?";
+                        String[] selectionArgs = new String[] { imageString };
+                        Uri queryUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+                        ContentResolver contentResolver = getContentResolver();
+                        Cursor cursor = contentResolver.query(queryUri, projection, selection, selectionArgs, null);
+
+                        Point dimensions = new Point();
+                        if (cursor.moveToFirst()) {
+                            int width = cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.WIDTH));
+                            int height = cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.HEIGHT));
+                            dimensions.set(width, height);
+                        }
+
+                        cursor.close();
+                        return dimensions;
+                    }
+
+                    @Override
+                    protected void onPostExecute(Point point) {
+                        super.onPostExecute(point);
+                        imageView.animate().rotation(90);
+                        float ratio = (float) point.x / point.y;
+                        imageView.animate().scaleX(ratio).scaleY(ratio);
+
+                        new AsyncTask<Void, Void, String>(){
+                            @Override
+                            protected String doInBackground(Void... params) {
+
+
+                                //get bitmap
+                                Bitmap bitmap = null;
+                                try {
+                                    bitmap = MediaStore.Images.Media.
+                                            getBitmap(getContentResolver(), Uri.parse("file://" + imageString));
+                                    Log.d(Util.TAG, "bitmap was set");
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                    Log.d(Util.TAG, "bitmap was NOT set");
+                                }
+                                //rotate bitmap
+                                Matrix rotateMatrix = new Matrix();
+                                rotateMatrix.postRotate(90);
+                                bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth()
+                                        , bitmap.getHeight(), rotateMatrix, false);
+
+                                //overwrite file
+                                File file = new File (imageString);
+                                if (file.exists()){
+                                    Log.d(Util.TAG, "file exists, overwritten");
+                                    file.delete();
+                                }
+                                try {
+                                    FileOutputStream out = new FileOutputStream(file);
+                                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
+                                    out.flush();
+                                    out.close();
+                                    Log.d(Util.TAG, "out success");
+                                } catch (Exception e) {
+                                    Log.d(Util.TAG, "out failed");
+                                    e.printStackTrace();
+                                }
+
+
+
+                                /*
+                                String selection = MediaStore.Images.Media.DATA + " = ?";
+                                String[] selectionArgs = new String[] { imageString };
+                                Uri queryUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+                                ContentResolver contentResolver = getContentResolver();
+
+                                int orientation = 0;
+                                Cursor c = contentResolver.query(queryUri, new String[]{ MediaStore.Images.Media.ORIENTATION}, selection, selectionArgs, null);
+                                if (c.moveToFirst()){
+                                    orientation = c.getInt(c.getColumnIndex(MediaStore.Images.Media.ORIENTATION));
+                                }
+
+                                ContentValues values = new ContentValues();
+                                values.put(MediaStore.Images.Media.ORIENTATION, (orientation + 90) % 360);
+
+                                contentResolver.update(queryUri, values, selection, selectionArgs);
+
+                                c.close();
+
+
+                                ContentValues values = new ContentValues();
+                                values.put(MediaStore.Images.Media.DATA, imageString);
+
+                                String selection = MediaStore.Images.Media.DATA + " = ?";
+                                String[] selectionArgs = new String[] { imageString };
+                                Uri queryUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+                                ContentResolver contentResolver = getContentResolver();
+                                Log.d(Util.TAG, "upated " + contentResolver.update(queryUri, values, selection, selectionArgs));
+
+
+                                String selection = MediaStore.Images.Media.DATA + " = ?";
+                                Uri queryUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+                                ContentResolver contentResolver = getContentResolver();
+                                contentResolver.update(queryUri,);
+                                */
+
+
+                                return null;
+                            }
+
+
+                        }.execute();
+                    }
+                }.execute();
+
+
+                //rotate imageview
+                //update new bitmap in mediastore where olduri = newuri
+                //with the above, I don't THINK i'll need a new uri
+                break;
+            case R.id.action_rotate_180:
+                //TODO
+                break;
+
             case R.id.action_fullscreen_edit:
                 Uri uriToEdit = getUriWithFilePrefixFromDataList(mViewPager.getCurrentItem());
                 Intent editIntent = new Intent(Intent.ACTION_EDIT);
