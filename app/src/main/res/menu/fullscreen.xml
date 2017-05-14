@@ -39,22 +39,6 @@
     </item>
 
     <item
-        android:title="rotate"
-        app:showAsAction="never">
-        <menu>
-            <item
-                android:id="@+id/action_rotate_negative_90"
-                android:title="-90 degrees"/>
-            <item
-                android:id="@+id/action_rotate_90"
-                android:title="90 degrees"/>
-            <item
-                android:id="@+id/action_rotate_180"
-                android:title="180 degrees"/>
-        </menu>
-    </item>
-
-    <item
         android:id="@+id/action_fullscreen_edit"
         android:title="edit..."
         app:showAsAction="never"/>
